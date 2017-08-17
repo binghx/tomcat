@@ -140,15 +140,27 @@ public final class Bootstrap {
 
     // -------------------------------------------------------- Private Methods
 
-
+    //: 初始化Tomcat提供的要求的三个基础classLoader(默认是同一个)
     private void initClassLoaders() {
         try {
+            //: 创建commonLoader createClassLoader(common)
             commonLoader = createClassLoader("common", null);
+            //: 如果commonLoader为null,使用JVM system loader作为common loader
             if( commonLoader == null ) {
                 // no config file, default to this loader - we might be in a 'single' env.
+                //: 过去当前classLoader作为commonLoader
+                //: 在这种情况下：
+                //: serverLoader,sharedLoader都为当前classLoader
+                //: 和JVM classLoader体系一致
                 commonLoader=this.getClass().getClassLoader();
             }
+            //: 创建serverLoader createClassLoader(server)
+            //: 根据默认的catalina.properties配置中server.loader被留白，
+            //: 使用commonLoader 作为 serverLoader
             catalinaLoader = createClassLoader("server", commonLoader);
+            //: 创建sharedLoader createClassLoader(shared)
+            //: 根据默认的catelina.properties配置中shared.server被留白，
+            //: 使用commonLoader 作为 sharedLoader
             sharedLoader = createClassLoader("shared", commonLoader);
         } catch (Throwable t) {
             handleThrowable(t);
@@ -157,7 +169,7 @@ public final class Bootstrap {
         }
     }
 
-
+    //: 根据入参，创建对应的classLoader
     private ClassLoader createClassLoader(String name, ClassLoader parent)
         throws Exception {
 
@@ -208,6 +220,7 @@ public final class Bootstrap {
      * @param str The original string
      * @return the modified string
      */
+    //: 解析path,将${..}替换
     protected String replace(String str) {
         // Implementation is copied from ClassLoaderLogManager.replace(),
         // but added special processing for catalina.home and catalina.base.
@@ -252,7 +265,36 @@ public final class Bootstrap {
      * Initialize daemon.
      * @throws Exception Fatal initialization error
      */
+    //: init()作用:
+    //: 1.初始化commonloader、catalinaloader、sharedloader
+    //: 2.通过反射得到Catalina实例对象(为下面各种操作实例化委托对象)
     public void init() throws Exception {
+        //: 初始化classloader
+        //: commonLoader 应用服务器与应用共享
+        //: serverLoader 应用服务器(命名为catalinaLoader)
+        //: sharedLoader 各应用之间共享
+        //: 这三个classLoader指向的路径和包列表都可以由catalina.properties配置
+
+        //'' catalina.properties
+
+        //' If left as blank,the JVM system loader will be used as Catalina's "common" loader.
+        //~ 如果留作空白，使用JVM的system loader作为common loader
+        //' common.loader="${catalina.base}/lib","${catalina.base}/lib/*.jar","${catalina.home}/lib","${catalina.home}/lib/*.jar"
+
+        //' If left as blank, the "common" loader will be used as Catalina's "server" loader.
+        //~ 如果留白，使用common loader作为 server loader
+        //' server.loader= (留白)
+
+        //' If left as blank,the "common" loader will be used as Catalina's "shared" loader.
+        //~ 如果留白，使用common loader作为 shared loader
+        //' shared.loader= (留白)
+
+        //: 综上所述,common loader,serverloader(catalinaLoader),sharedloader默认是同一个classloader
+
+        //: common loader ,server loader ,shared loader本身都是URLClassLoader(ClassLoader的一个子类)对象,
+
+
+        //: 除了这三个基础classLoader,tomcat还提供了应用classLoader,不在这里初始化
 
         initClassLoaders();
 
@@ -422,9 +464,20 @@ public final class Bootstrap {
         paramTypes[0] = Boolean.TYPE;
         Object paramValues[] = new Object[1];
         paramValues[0] = Boolean.valueOf(await);
+
+        //? 为什么采用反射的方式？而不是直接调用catalinaDaemon的setAwait()方法
+        //! catalinaDaemon.setAwait();
+        //x 难道Catalina的setAwait()方法是私有的？
+        //: private Object catalinaDaemon = null;
+        //: 看到catalinaDaemon的定义就明白了，Object
+        //? 为什么要定义成Object呢？
+        //: 设计理念：Boostrap是一个独立的tomcat启动入口,可以和tomcat完全分离
+        //: 所以，为了实现这种松耦合的设计，定义为Object,使用反射机制
         Method method =
             catalinaDaemon.getClass().getMethod("setAwait", paramTypes);
         method.invoke(catalinaDaemon, paramValues);
+
+        //: Boostrap通过委托Catalina setAwait()
 
     }
 
@@ -475,6 +528,26 @@ public final class Bootstrap {
             // a range of class not found exceptions.
             Thread.currentThread().setContextClassLoader(daemon.catalinaLoader);
         }
+/**
+ *  startd
+ *      daemon.load(args);
+ *      daemon.start();
+ *
+ *  start
+ *      daemon.setAwait(true);
+ *      daemon.start();
+ *
+ *  stopd
+ *      daemon.stop();
+ *
+ *  stop
+ *      daemon.stopServer();
+ *
+ * 研究几个问题：
+ *  setAwait()方法的作用
+ *  start()方法详解
+ *  stop()和stopServer()的区别
+ */
 
         try {
             String command = "start";

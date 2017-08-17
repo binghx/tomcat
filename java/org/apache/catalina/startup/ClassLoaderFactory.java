@@ -223,12 +223,14 @@ public final class ClassLoaderFactory {
             for (int i = 0; i < array.length; i++) {
                 log.debug("  location " + i + " is " + array[i]);
             }
-
+        //: AccessController.doPrivileged是Java安全机制的API
+        //: 授权 加载的代码（远程或本地jar中的class） 可以访问系统资源
         return AccessController.doPrivileged(
                 new PrivilegedAction<URLClassLoader>() {
                     @Override
                     public URLClassLoader run() {
                         if (parent == null)
+                            //: 原来是构造了URLClassLoader
                             return new URLClassLoader(array);
                         else
                             return new URLClassLoader(array, parent);
