@@ -90,12 +90,17 @@ public class ObjectCreateRule extends Rule {
      *   the element name otherwise
      * @param attributes The attribute list for this element
      */
+    //: ObjectCreateRule的begin方法
+    //: 根据模式创建对象
     @Override
     public void begin(String namespace, String name, Attributes attributes)
             throws Exception {
 
         // Identify the name of the class to instantiate
+        //~ 确认要实例化的类的名字
         String realClassName = className;
+        //: 如果attributeName不为null,attributeName对应的value不为null
+        //: value为将要实例化的类名
         if (attributeName != null) {
             String value = attributes.getValue(attributeName);
             if (value != null) {
@@ -106,7 +111,8 @@ public class ObjectCreateRule extends Rule {
             digester.log.debug("[ObjectCreateRule]{" + digester.match +
                     "}New " + realClassName);
         }
-
+        //: className和attributeName对应的value必须至少有一个不为null
+        //: 否则NullPointerException
         if (realClassName == null) {
             throw new NullPointerException("No class name specified for " +
                     namespace + " " + name);

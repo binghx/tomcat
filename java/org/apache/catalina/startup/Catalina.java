@@ -267,6 +267,10 @@ public class Catalina {
      * Create and configure the Digester we will be using for startup.
      * @return the main digester to parse server.xml
      */
+    //: 创建和配置用于启动的Digester(解析server.xml)
+    //: Digester是事件驱动型的xml解析工具,将xml转为Java对象
+    //: 根据模式匹配添加规则
+
     protected Digester createStartDigester() {
         long t1=System.currentTimeMillis();
         // Initialize the digester
@@ -281,6 +285,11 @@ public class Catalina {
         digester.setUseContextClassLoader(true);
 
         // Configure the actions we will be using
+        //: digester.addObjectCreate(pattern,className,attributeName)
+        //: pattern:模式匹配
+        //: className:默认创建对象的className
+        //: attributeName:xml配置文件中元素定义的属性名,如果不为null,则使用配置的属性值
+        //: 替代默认的className
         digester.addObjectCreate("Server",
                                  "org.apache.catalina.core.StandardServer",
                                  "className");
@@ -639,9 +648,11 @@ public class Catalina {
     /**
      * Start a new server instance.
      */
+    //: 创建server实例
     public void start() {
 
         if (getServer() == null) {
+            //真正创建并初始化server的函数
             load();
         }
 
@@ -654,6 +665,7 @@ public class Catalina {
 
         // Start the new server
         try {
+            //: 启动server
             getServer().start();
         } catch (LifecycleException e) {
             log.fatal(sm.getString("catalina.serverStartFail"), e);
@@ -671,6 +683,13 @@ public class Catalina {
         }
 
         // Register shutdown hook
+        //~ 注册jvm shutdown hook
+        //: jdk1.3开始为了防止jvm进程出现异常退出而不能善其后
+        //: Runtime.getRuntime().addShutdownHook(Thread thread)
+        //: Runtime.getRuntime().removeShutdownHook(Thread thread)
+        //: CatalinaShutdownHook中，调用Catalina.this.stop()
+        //: 让tomcat在非正常情况下，也能按照正常stop()方法停止运行
+        //: 比如:Terminal中ctrl+c linux下kill pid (对kill -9 pid无效)
         if (useShutdownHook) {
             if (shutdownHook == null) {
                 shutdownHook = new CatalinaShutdownHook();
@@ -827,6 +846,7 @@ public class Catalina {
         @Override
         public void run() {
             try {
+                //: System.out.println("===========shutdownhook执行了==========");
                 if (getServer() != null) {
                     Catalina.this.stop();
                 }

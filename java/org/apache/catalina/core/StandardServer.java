@@ -467,6 +467,7 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
                     }
 
                     // Read a set of characters from the socket
+                    //? expected是怎么避免Dos攻击的呢 待解决疑问
                     int expected = 1024; // Cut off to avoid DoS attack
                     while (expected < shutdown.length()) {
                         if (random == null)
@@ -482,6 +483,8 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
                             ch = -1;
                         }
                         // Control character or EOF (-1) terminates loop
+                        //~ 控制字符或-1(表示结束),则跳出循环
+                        // :ascii 码表中 0~31，127是控制字符，其他是可打印字符
                         if (ch < 32 || ch == 127) {
                             break;
                         }

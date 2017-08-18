@@ -547,6 +547,11 @@ public final class Bootstrap {
  *  setAwait()方法的作用
  *  start()方法详解
  *  stop()和stopServer()的区别
+ *
+ * stopServer:
+ *      1.根据server.xml中配置的server监听端口创建socket,默认8005
+ *      2.发送server.xml中配置的shutdown关闭tomcat,默认是“SHUTDOWN”
+ *
  */
 
         try {
